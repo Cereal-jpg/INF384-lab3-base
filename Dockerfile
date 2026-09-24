@@ -1,4 +1,6 @@
-FROM public.ecr.aws/lambda/nodejs:20 AS builder
+FROM public.ecr.aws/lambda/nodejs:20 AS build
+
+WORKDIR /build
 
 COPY package.json package-lock.json ./
 RUN npm ci
