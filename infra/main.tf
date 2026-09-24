@@ -15,6 +15,10 @@ provider "aws" {
 
 data "aws_caller_identity" "actual" {}
 
+data "aws_ssm_parameter" "inyeccion_falla" {
+  name = "/inf384/parametro-que-no-existe"
+}
+
 locals {
   # El entorno academico no permite crear roles IAM. La funcion reutiliza el rol de ejecucion preexistente de la cuenta.
   arn_rol_ejecucion = "arn:aws:iam::${data.aws_caller_identity.actual.account_id}:role/${var.nombre_rol_ejecucion}"
