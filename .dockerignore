@@ -1,0 +1,17 @@
+# Dependencias y artefactos generados localmente
+node_modules/
+dist/
+coverage/
+
+# Metadatos del repositorio y CI
+.git/
+.github/
+
+# Archivos que no forman parte del artefacto Lambda
+test/
+infra/
+README.md
+backend.hcl
+*.tf
+*.tfvars
+.dockerignore.ejemplo
