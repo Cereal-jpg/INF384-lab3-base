@@ -13,6 +13,12 @@ on:
     paths:
       - 'infra/**'
   workflow_dispatch:
+    inputs:
+      autorizar_destruccion:
+        description: 'Autorizar explicitamente destrucciones o reemplazos del plan'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -127,6 +133,43 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number: issue, body });
             }
+
+      - name: Bloquear destrucciones no autorizadas
+        working-directory: infra
+        env:
+          AUTORIZAR_DESTRUCCION: ${{ inputs.autorizar_destruccion }}
+        run: |
+          destrucciones="$(jq -r '
+            .resource_changes[]?
+            | select(.change.actions | index("delete") != null)
+            | .address
+          ' tfplan.json)"
+
+          if [ -n "$destrucciones" ] && [ "$AUTORIZAR_DESTRUCCION" != "true" ]; then
+            echo "::error::El plan contiene destrucciones o reemplazos no autorizados."
+            {
+              echo '### Destrucciones no autorizadas — HALLAZGO'
+              echo
+              echo 'El plan contiene estas direcciones con la accion `delete`:'
+              echo
+              echo '```text'
+              echo "$destrucciones"
+              echo '```'
+              echo
+              echo 'Para una ejecucion manual excepcional, habilita `autorizar_destruccion` en workflow_dispatch.'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          {
+            echo '### Destrucciones — OK'
+            echo
+            if [ -n "$destrucciones" ]; then
+              echo 'Las destrucciones fueron autorizadas explicitamente mediante workflow_dispatch.'
+            else
+              echo 'El plan no contiene acciones `delete`.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Guardar artefactos del plan
         uses: actions/upload-artifact@v4
